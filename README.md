@@ -1,6 +1,10 @@
 [![NuGet](https://img.shields.io/nuget/v/SQLCoverLib)](https://www.nuget.org/packages/SQLCoverLib)
 [![Nuget](https://img.shields.io/nuget/dt/SQLCoverLib)](https://www.nuget.org/stats/packages/SQLCoverLib?groupby=Version)
 
+# SQLCover
+
+Fork of a fork of the original SQLCover. Added custom code to support exporting to gretard/sonar-sql-plugin
+
 # SQLCoverLib
 Fork of famous https://github.com/GoEddie/SQLCover with SQLCoverLib updated to .NET 6 and 7.
 
