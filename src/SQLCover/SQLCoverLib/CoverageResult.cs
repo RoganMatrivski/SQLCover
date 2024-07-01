@@ -262,7 +262,7 @@ namespace SQLCover
             {
                 builder.AppendFormat("<a name=\"{0}\"><div class=\"batch\">", b.ObjectName);
                 builder.AppendFormat("<div><p class=\"batch-summary\">'{3}' summary: statement count: {0}, covered statement count: {1}, coverage %: {2}</p></div>", b.StatementCount, b.CoveredStatementCount,
-                    (float) b.CoveredStatementCount / (float) b.StatementCount, b.ObjectName);
+                    (float)b.CoveredStatementCount / (float)b.StatementCount, b.ObjectName);
                 builder.Append("<pre>");
                 var tempBuffer = b.Text;
                 foreach (var statement in b.Statements.OrderByDescending(p => p.Offset))
@@ -303,12 +303,12 @@ namespace SQLCover
         {
             File.WriteAllText(path, resultString);
         }
-        
+
         public void SaveSourceFiles(string path)
         {
             foreach (var batch in _batches)
             {
-                File.WriteAllText(Path.Combine(path, batch.ObjectName), batch.Text);
+                File.WriteAllText(Path.Combine(path, batch.ObjectName + ".sql"), batch.Text);
             }
         }
 
@@ -391,22 +391,18 @@ namespace SQLCover
             builder.AppendFormat("<FullName>{0}</FullName>", DatabaseName);
             builder.AppendFormat("<ModuleName>{0}</ModuleName>", DatabaseName);
 
-            var fileMap = new Dictionary<string, int>();
-            var i = 1;
-            foreach (var batch in _batches)
-            {
-                fileMap[batch.ObjectName] = i++;
-            }
-
             builder.Append("<Files>\r\n");
-            foreach (var pair in fileMap)
+
+            var fileMap = new Dictionary<string, int>();
+            foreach (var (batch, index) in _batches.Select((value, i) => (value, i)))
             {
-                builder.AppendFormat("\t<File uid=\"{0}\" fullPath=\"{1}\" />\r\n", pair.Value, pair.Key);
+                fileMap.Add(batch.ObjectName, index);
+                builder.AppendFormat("\t<File uid=\"{0}\" fullPath=\"{1}.sql\" />\r\n", index, batch.ObjectName);
             }
 
             builder.Append("</Files>\r\n<Classes>\r\n");
 
-            i = 1;
+            var i = 1;
             foreach (var batch in _batches)
             {
                 builder.AppendFormat(
