@@ -1,0 +1,88 @@
+name: Build Release
+
+on:
+  push:
+    # branches: [ "main" ]
+    tags:
+      - "v*"
+
+env:
+    APP_NAME: SqlCover 
+    APP_VERSION: 2.2
+    DOTNET_VERSION: '8.0.x'   
+
+permissions:
+  contents: write
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [win-x86, win-x64, linux-x64, osx-x64]
+    
+    # Build Steps    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Refer : https://github.com/actions/setup-dotnet/blob/main/action.yml
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 'Show dotnet info'
+        run: dotnet --info
+
+      - name: Build and publish app for multiple platform
+        run: >
+              dotnet publish ./src/SQLCover/SqlCoverCore/SqlCoverCore.csproj 
+              -c Release 
+              --runtime ${{ matrix.os }} 
+              --output "releases/" 
+              --framework net8.0 
+              --self-contained true 
+
+      # Store the version, stripping any v-prefix
+      - name: Write release version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo Version: $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: 'Zipping ${{env.APP_NAME}}_${{ env.VERSION }} for release'
+        run:  >
+          echo "current path $PWD, current version ${{ env.VERSION }}" &&
+          mkdir -p ./output/ &&
+          cd "releases/" &&
+          zip -r "../output/${{env.APP_NAME}}_${{ env.VERSION }}_${{ matrix.os }}.zip" "." &&
+          cd ..
+
+      - name: Archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{env.APP_NAME}}_${{ env.VERSION }}_${{ matrix.os }}
+          path: |
+            output/${{env.APP_NAME}}_${{ env.VERSION }}_${{ matrix.os }}.zip
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          merge-multiple: true
+      - name: List files
+        run: find ./artifacts
+      - name: Release Github packages
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{env.APP_NAME}} ${{ github.ref_name }}
+          body: Releasing ${{env.APP_NAME}} ${{ github.ref_name }}
+          files: ./artifacts/*.zip
+          token: ${{ secrets.GITHUB_TOKEN }}          
+          fail_on_unmatched_files: true
+          generate_release_notes: true
